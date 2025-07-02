@@ -1,33 +1,95 @@
-//TIP With Search Everywhere, you can find any action, file, or symbol in your project. Press <shortcut actionId="Shift"/> <shortcut actionId="Shift"/>, type in <b>terminal</b>, and press <shortcut actionId="EditorEnter"/>. Then run <shortcut raw="npm run dev"/> in the terminal and click the link in its output to open the app in the browser.
-export function setupCounter(element: HTMLElement) {
-  //TIP Try <shortcut actionId="GotoDeclaration"/> on <shortcut raw="counter"/> to see its usages. You can also use this shortcut to jump to a declaration – try it on <shortcut raw="counter"/> on line 13.
-  let counter = 0;
+import { LlmConnectorFactory } from '@src/llm/domain/LlmConnectorFactory.ts';
+import { LlmConnectorId } from '@src/llm/domain/LlmConnectorId.ts';
+import { OllamaConnector } from '@src/llm/infrastructure/OllamaConnector.ts';
+import { LlmConnector } from '@src/llm/domain/LlmConnector.ts';
+import { LlmId } from '@src/llm/domain/LlmId.ts';
+import { setSelectOptionsFromEnum } from '@src/llm/shared/infrastructure/SelectOptions.ts';
 
-  const adjustCounterValue = (value: number)  => {
-    if (value >= 100) return value - 100;
-    if (value <= -100) return value + 100;
-    return value;
-  };
+class Main {
+  private static readonly LLM_CONNECTOR_HOST: string = import.meta.env
+    .VITE_LLM_CONNECTOR_HOST;
+  private static readonly LLM_CONNECTOR_PORT: number = import.meta.env
+    .VITE_LLM_CONNECTOR_PORT;
 
-  const setCounter = (value: number) => {
-    counter = adjustCounterValue(value);
-    //TIP WebStorm has lots of inspections to help you catch issues in your project. It also has quick fixes to help you resolve them. Press <shortcut actionId="ShowIntentionActions"/> on <shortcut raw="text"/> and choose <b>Inline variable</b> to clean up the redundant code.
-    const text = `${counter}`;
-    element.innerHTML = text;
-  };
+  private static readonly llmForm: HTMLFormElement = document.getElementById(
+    'llm-form',
+  ) as HTMLFormElement;
+  private static readonly llmConnectorSelect: HTMLSelectElement =
+    document.getElementById('llm-connector-select') as HTMLSelectElement;
+  private static readonly llmSelect: HTMLSelectElement =
+    document.getElementById('llm-select') as HTMLSelectElement;
+  private static readonly questionInput: HTMLTextAreaElement =
+    document.getElementById('llm-question-input') as HTMLTextAreaElement;
+  private static readonly llmResponseOutput: HTMLElement =
+    document.getElementById('llm-response-output') as HTMLElement;
+  private static readonly sendMessageButton: HTMLButtonElement =
+    document.getElementById('send-message-button') as HTMLButtonElement;
 
-  document.getElementById('increaseByOne')?.addEventListener('click', () => setCounter(counter + 1));
-  document.getElementById('decreaseByOne')?.addEventListener('click', () => setCounter(counter - 1));
-  document.getElementById('increaseByTwo')?.addEventListener('click', () => setCounter(counter + 2));
+  private static readonly connectors: LlmConnector[] = [
+    new OllamaConnector(
+      Main.LLM_CONNECTOR_HOST,
+      Main.LLM_CONNECTOR_PORT,
+      LlmId.gemma3_12b_it_q4_K_M,
+    ),
+  ];
 
-  //TIP In the app running in the browser, you’ll find that clicking <b>-2</b> doesn't work. To fix that, rewrite it using the code from lines 19 - 21 as examples of the logic.
-  document.getElementById('decreaseByTwo')
+  private static validateForm(): boolean {
+    return (
+      Main.llmConnectorSelect.value !== '' &&
+      Main.llmSelect.value !== '' &&
+      Main.questionInput.value.trim() !== ''
+    );
+  }
 
-  //TIP Let’s see how to review and commit your changes. Press <shortcut actionId="GotoAction"/> and look for <b>commit</b>. Try checking the diff for a file – double-click main.ts to do that.
-  setCounter(0);
+  private static updateButtonState(): void {
+    Main.sendMessageButton.disabled = !Main.validateForm();
+  }
+
+  private static setInputEventListeners(): void {
+    Main.llmConnectorSelect.addEventListener('change', () =>
+      Main.updateButtonState(),
+    );
+    Main.llmSelect.addEventListener('change', () => Main.updateButtonState());
+    Main.questionInput.addEventListener('input', () =>
+      Main.updateButtonState(),
+    );
+  }
+
+  private static setFormSubmitEventListener(): void {
+    Main.llmForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      if (!Main.validateForm()) {
+        return;
+      }
+
+      const connectorId = Main.llmConnectorSelect.value as LlmConnectorId;
+      const llmConnector = new LlmConnectorFactory(Main.connectors).get(
+        connectorId,
+      );
+
+      Main.sendMessageButton.disabled = true;
+      llmConnector
+        .ask(Main.questionInput.value)
+        .then((response: string) => {
+          Main.llmResponseOutput.innerText = response;
+        })
+        .catch((error: Error) => {
+          alert(error.message);
+        })
+        .finally(() => {
+          Main.updateButtonState();
+        });
+    });
+  }
+
+  public static main(): void {
+    setSelectOptionsFromEnum(Main.llmConnectorSelect, LlmConnectorId);
+    setSelectOptionsFromEnum(Main.llmSelect, LlmId);
+    Main.setFormSubmitEventListener();
+    Main.setInputEventListeners();
+    Main.updateButtonState();
+  }
 }
 
-//TIP To find text strings in your project, you can use the <shortcut actionId="FindInPath"/> shortcut. Press it and type in <b>counter</b> – you’ll get all matches in one place.
-setupCounter(document.getElementById('counter-value') as HTMLElement);
-
-//TIP There's much more in WebStorm to help you be more productive. Press <shortcut actionId="Shift"/> <shortcut actionId="Shift"/> and search for <b>Learn WebStorm</b> to open our learning hub with more things for you to try.
+Main.main();
