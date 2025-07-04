@@ -17,9 +17,12 @@ export class OllamaConnector implements LlmConnector {
       temperature: 0.7,
     });
 
+    const memory = new BufferMemory({ returnMessages: true });
+    memory.chatHistory.addUserMessage("Always respond in Spanish. Do not explain, state, or mention that you are responding in Spanish — just do it.");
+
     this.conversation = new ConversationChain({
       llm: this.llm,
-      memory: new BufferMemory({ returnMessages: true }),
+      memory: memory,
     });
   }
 
