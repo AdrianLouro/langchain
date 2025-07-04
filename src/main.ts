@@ -6,38 +6,23 @@ import { LlmId } from '@src/llm/domain/LlmId.ts';
 import { setSelectOptionsFromEnum } from '@src/llm/shared/infrastructure/SelectOptions.ts';
 
 class Main {
-  private static readonly LLM_CONNECTOR_HOST: string = import.meta.env
-    .VITE_LLM_CONNECTOR_HOST;
-  private static readonly LLM_CONNECTOR_PORT: number = import.meta.env
-    .VITE_LLM_CONNECTOR_PORT;
+  private static readonly LLM_CONNECTOR_HOST: string = import.meta.env.VITE_LLM_CONNECTOR_HOST;
+  private static readonly LLM_CONNECTOR_PORT: number = import.meta.env.VITE_LLM_CONNECTOR_PORT;
 
-  private static readonly llmForm: HTMLFormElement = document.getElementById(
-    'llm-form',
-  ) as HTMLFormElement;
-  private static readonly llmConnectorSelect: HTMLSelectElement =
-    document.getElementById('llm-connector-select') as HTMLSelectElement;
-  private static readonly llmSelect: HTMLSelectElement =
-    document.getElementById('llm-select') as HTMLSelectElement;
-  private static readonly questionInput: HTMLTextAreaElement =
-    document.getElementById('llm-question-input') as HTMLTextAreaElement;
-  private static readonly llmResponseOutput: HTMLElement =
-    document.getElementById('llm-response-output') as HTMLElement;
-  private static readonly sendMessageButton: HTMLButtonElement =
-    document.getElementById('send-message-button') as HTMLButtonElement;
+  private static readonly llmForm = document.getElementById('llm-form') as HTMLFormElement;
+  private static readonly llmConnectorSelect = document.getElementById('llm-connector-select') as HTMLSelectElement;
+  private static readonly llmSelect = document.getElementById('llm-select') as HTMLSelectElement;
+  private static readonly questionInput = document.getElementById('llm-question-input') as HTMLTextAreaElement;
+  private static readonly llmResponseOutput = document.getElementById('llm-response-output') as HTMLElement;
+  private static readonly sendMessageButton = document.getElementById('send-message-button') as HTMLButtonElement;
 
   private static readonly connectors: LlmConnector[] = [
-    new OllamaConnector(
-      Main.LLM_CONNECTOR_HOST,
-      Main.LLM_CONNECTOR_PORT,
-      LlmId.gemma3_12b_it_q4_K_M,
-    ),
+    new OllamaConnector(Main.LLM_CONNECTOR_HOST, Main.LLM_CONNECTOR_PORT, LlmId.gemma3_12b_it_q4_K_M),
   ];
 
   private static validateForm(): boolean {
     return (
-      Main.llmConnectorSelect.value !== '' &&
-      Main.llmSelect.value !== '' &&
-      Main.questionInput.value.trim() !== ''
+      Main.llmConnectorSelect.value !== '' && Main.llmSelect.value !== '' && Main.questionInput.value.trim() !== ''
     );
   }
 
@@ -46,13 +31,9 @@ class Main {
   }
 
   private static setInputEventListeners(): void {
-    Main.llmConnectorSelect.addEventListener('change', () =>
-      Main.updateButtonState(),
-    );
+    Main.llmConnectorSelect.addEventListener('change', () => Main.updateButtonState());
     Main.llmSelect.addEventListener('change', () => Main.updateButtonState());
-    Main.questionInput.addEventListener('input', () =>
-      Main.updateButtonState(),
-    );
+    Main.questionInput.addEventListener('input', () => Main.updateButtonState());
   }
 
   private static setFormSubmitEventListener(): void {
@@ -64,9 +45,7 @@ class Main {
       }
 
       const connectorId = Main.llmConnectorSelect.value as LlmConnectorId;
-      const llmConnector = new LlmConnectorFactory(Main.connectors).get(
-        connectorId,
-      );
+      const llmConnector = new LlmConnectorFactory(Main.connectors).get(connectorId);
 
       Main.sendMessageButton.disabled = true;
       llmConnector
